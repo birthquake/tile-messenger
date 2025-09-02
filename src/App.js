@@ -1,19 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { auth } from './firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import AuthForm from './components/AuthForm';
 
 function App() {
-  const [tiles, setTiles] = useState([
-    { id: 1, preview: "Hey Rashied!", color: "#FFD700" },
-    { id: 2, preview: "Kickball plans", color: "#ADD8E6" },
-    { id: 3, preview: "Corkt update", color: "#90EE90" }
-  ]);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    return onAuthStateChanged(auth, setUser);
+  }, []);
+
+  if (!user) return <AuthForm onAuth={setUser} />;
 
   return (
-    <div className="grid">
-      {tiles.map(tile => (
-        <div key={tile.id} className="tile" style={{ backgroundColor: tile.color }}>
-          <p>{tile.preview}</p>
-        </div>
-      ))}
+    <div>
+      <button onClick={() => signOut(auth)}>Sign Out</button>
+      <h2>Welcome, {user.email}</h2>
+      {/* Tile grid will go here */}
     </div>
   );
 }
