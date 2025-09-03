@@ -50,6 +50,26 @@ export default function TileGrid({ onTileTap }) {
     setNumColumns(getNumColumns());
   };
 
+  const handleDragEnd = async (result) => {
+    if (!result.destination) return;
+
+    const reordered = Array.from(tiles);
+    const [moved] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, moved);
+
+    setTiles(reordered);
+    setLoading(true);
+
+    for (let i = 0; i < reordered.length; i++) {
+      await updateTile(reordered[i].id, {
+        priority: Date.now() + (reordered.length - i)
+      });
+    }
+
+    setLoading(false);
+    toast.success('Tiles reordered');
+  };
+
   const directionFactor = sortDirection === 'asc' ? 1 : -1;
 
   const filteredTiles = tiles.filter((tile) => {
@@ -88,7 +108,7 @@ export default function TileGrid({ onTileTap }) {
     <div className="tilegrid-wrapper">
       <Toaster position="top-right" />
 
-      <div className="controls">
+          <div className="controls">
         <div className="filter-tabs">
           {['all', 'pinned', 'unread', 'replied'].map((type) => (
             <button
