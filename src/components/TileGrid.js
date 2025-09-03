@@ -5,6 +5,15 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
 
+// ✅ Move this above useState to avoid ReferenceError
+const getNumColumns = () => {
+  if (typeof window === 'undefined') return 4;
+  const width = window.innerWidth;
+  if (width < 600) return 2;
+  if (width < 900) return 3;
+  return 4;
+};
+
 export default function TileGrid({ onTileTap }) {
   const [tiles, setTiles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -21,13 +30,6 @@ export default function TileGrid({ onTileTap }) {
 
   const handleResize = () => {
     setNumColumns(getNumColumns());
-  };
-
-  const getNumColumns = () => {
-    const width = window.innerWidth;
-    if (width < 600) return 2;
-    if (width < 900) return 3;
-    return 4;
   };
 
   const handleDragEnd = async (result) => {
@@ -92,7 +94,7 @@ export default function TileGrid({ onTileTap }) {
   });
 
   return (
-    <div>
+    <div className="tilegrid-wrapper">
       <Toaster position="top-right" />
       <button className="add-tile-button" onClick={() => addTile()}>+</button>
 
