@@ -2,13 +2,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './ConversationView.css';
 
-export default function ConversationView({ thread }) {
+export default function ConversationView({ thread, onBack }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const messageEndRef = useRef(null);
 
   useEffect(() => {
-    // Mock messages for layout preview
     setMessages([
       { sender: 'You', text: 'Hey, are we still on for tomorrow?', timestamp: '10:42 AM' },
       { sender: 'Alex', text: 'Yep! Looking forward to it.', timestamp: '10:45 AM' },
@@ -34,7 +33,7 @@ export default function ConversationView({ thread }) {
   return (
     <div className="conversation-view">
       <header className="conversation-header">
-        <button className="back-button">←</button>
+        <button className="back-button" onClick={onBack}>←</button>
         <h2>{thread?.title || 'Conversation'}</h2>
       </header>
 
