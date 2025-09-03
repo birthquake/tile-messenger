@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { subscribeToTiles, addTile, updateTile } from '../services/tileService';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function TileGrid() {
@@ -66,12 +66,9 @@ export default function TileGrid() {
       ),
       { duration: 5000 }
     );
-
-    // Optional: delete from Firestore here if needed
   };
 
   const handleTileTap = (tile) => {
-    // Placeholder for future navigation to conversation view
     console.log('Open conversation:', tile.id);
   };
 
@@ -88,43 +85,56 @@ export default function TileGrid() {
     <div>
       <Toaster position="top-right" />
       <button className="add-tile-button" onClick={() => addTile()}>+</button>
+
+      {loading && <div className="loading-spinner">Loading...</div>}
+
+      {tiles.length === 0 && !loading && (
+        <div className="empty-state">
+          <p>No conversations yet. Tap + to start one.</p>
+        </div>
+      )}
+
       <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable droppableId="tileGrid" direction="horizontal">
           {(provided) => (
             <div className="grid" ref={provided.innerRef} {...provided.droppableProps}>
-              {tiles.map((tile, index) => (
-                <Draggable key={tile.id} draggableId={tile.id} index={index}>
-                  {(provided) => (
-                    <motion.div
-                      className="tile"
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      style={{
-                        ...provided.draggableProps.style,
-                        backgroundColor: getGradientColor(index),
-                        position: 'relative'
-                      }}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      whileTap={{ scale: 0.97 }}
-                      transition={{ duration: 0.2 }}
-                      onClick={() => handleTileTap(tile)}
-                    >
-                      <button
-                        className="delete-button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(tile.id);
+              <AnimatePresence>
+                {tiles.map((tile, index) => (
+                  <Draggable key={tile.id} draggableId={tile.id} index={index}>
+                    {(provided) => (
+                      <motion.div
+                        className="tile"
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        style={{
+                          ...provided.draggableProps.style,
+                          backgroundColor: getGradientColor(index),
+                          position: 'relative',
+                          cursor: 'grab'
                         }}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        whileTap={{ scale: 0.97 }}
+                        transition={{ duration: 0.3 }}
+                        onClick={() => handleTileTap(tile)}
                       >
-                        ×
-                      </button>
-                      <p>{tile.preview}</p>
-                    </motion.div>
-                  )}
-                </Draggable>
-              ))}
+                        <button
+                          className="delete-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(tile.id);
+                          }}
+                        >
+                          ×
+                        </button>
+                        <p>{tile.preview}</p>
+                      </motion.div>
+                    )}
+                  </Draggable>
+                ))}
+              </AnimatePresence>
               {provided.placeholder}
             </div>
           )}
