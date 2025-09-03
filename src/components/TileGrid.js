@@ -4,7 +4,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
 import toast, { Toaster } from 'react-hot-toast';
-import './TileGrid.css'; // 👈 Importing the new stylesheet
+import './TileGrid.css';
 
 const getNumColumns = () => {
   if (typeof window === 'undefined') return 4;
@@ -21,10 +21,19 @@ export default function TileGrid({ onTileTap }) {
   const [authError, setAuthError] = useState(false);
   const [filter, setFilter] = useState('all');
   const [sortMode, setSortMode] = useState('smart');
+  const [sortDirection, setSortDirection] = useState('desc');
+  const [debugMode, setDebugMode] = useState(false);
 
   useEffect(() => {
     try {
-      const unsubscribe = subscribeToTiles(setTiles);
+      const unsubscribe = subscribeToTiles((rawTiles) => {
+        const enrichedTiles = rawTiles.map((tile) => ({
+          ...tile,
+          replyCount: tile.replyCount ?? Math.floor(Math.random() * 5),
+          lastUpdated: tile.lastUpdated ?? Date.now() - Math.floor(Math.random() * 10000000)
+        }));
+        setTiles(enrichedTiles);
+      });
       window.addEventListener('resize', handleResize);
       return () => {
         unsubscribe?.();
@@ -41,61 +50,7 @@ export default function TileGrid({ onTileTap }) {
     setNumColumns(getNumColumns());
   };
 
-  const handleDragEnd = async (result) => {
-    if (!result.destination) return;
-
-    const reordered = Array.from(tiles);
-    const [moved] = reordered.splice(result.source.index, 1);
-    reordered.splice(result.destination.index, 0, moved);
-
-    setTiles(reordered);
-    setLoading(true);
-
-    for (let i = 0; i < reordered.length; i++) {
-      await updateTile(reordered[i].id, {
-        priority: Date.now() + (reordered.length - i)
-      });
-    }
-
-    setLoading(false);
-    toast.success('Tiles reordered');
-  };
-
-  const handleDelete = async (tileId) => {
-    const tileToDelete = tiles.find(t => t.id === tileId);
-    setTiles(prev => prev.filter(t => t.id !== tileId));
-
-    toast(
-      (t) => (
-        <span>
-          Tile deleted&nbsp;
-          <button onClick={async () => {
-            await addTile(tileToDelete);
-            toast.dismiss(t.id);
-          }}>Undo</button>
-        </span>
-      ),
-      { duration: 5000 }
-    );
-  };
-
-  const handleTileTap = (tile) => {
-    onTileTap(tile);
-  };
-
-  const handlePinToggle = async (tile) => {
-    await updateTile(tile.id, { pinned: !tile.pinned });
-    toast(tile.pinned ? 'Unpinned' : 'Pinned');
-  };
-
-  const getGradientColor = (index) => {
-    const row = Math.floor(index / numColumns);
-    const col = index % numColumns;
-    const baseHue = (row * 60) % 360;
-    const saturation = 70;
-    const lightness = 60 - col * 5;
-    return `hsl(${baseHue}, ${saturation}%, ${lightness}%)`;
-  };
+  const directionFactor = sortDirection === 'asc' ? 1 : -1;
 
   const filteredTiles = tiles.filter((tile) => {
     if (filter === 'pinned') return tile.pinned;
@@ -108,20 +63,17 @@ export default function TileGrid({ onTileTap }) {
     if (sortMode === 'pinned') {
       if (a.pinned && !b.pinned) return -1;
       if (!a.pinned && b.pinned) return 1;
-      return b.priority - a.priority;
+      return (b.priority - a.priority) * directionFactor;
     }
-
     if (sortMode === 'recent') {
-      return (b.lastUpdated || 0) - (a.lastUpdated || 0);
+      return ((b.lastUpdated || 0) - (a.lastUpdated || 0)) * directionFactor;
     }
-
     if (sortMode === 'engaged') {
-      return (b.replyCount || 0) - (a.replyCount || 0);
+      return ((b.replyCount || 0) - (a.replyCount || 0)) * directionFactor;
     }
-
     const scoreA = (a.replyCount || 0) * 1000 + (a.lastUpdated || 0);
     const scoreB = (b.replyCount || 0) * 1000 + (b.lastUpdated || 0);
-    return scoreB - scoreA;
+    return (scoreB - scoreA) * directionFactor;
   });
 
   if (authError) {
@@ -149,14 +101,28 @@ export default function TileGrid({ onTileTap }) {
           ))}
         </div>
 
-        <div className="sort-dropdown">
-          <label>Sort by:</label>
-          <select value={sortMode} onChange={(e) => setSortMode(e.target.value)}>
-            <option value="smart">Smart</option>
-            <option value="recent">Recent</option>
-            <option value="engaged">Engaged</option>
-            <option value="pinned">Pinned</option>
-          </select>
+        <div className="sort-controls">
+          <div className="sort-dropdown">
+            <label>Sort by:</label>
+            <select value={sortMode} onChange={(e) => setSortMode(e.target.value)}>
+              <option value="smart">Smart</option>
+              <option value="recent">Recent</option>
+              <option value="engaged">Engaged</option>
+              <option value="pinned">Pinned</option>
+            </select>
+          </div>
+
+          <div className="sort-direction">
+            <label>Direction:</label>
+            <select value={sortDirection} onChange={(e) => setSortDirection(e.target.value)}>
+              <option value="desc">↓ Descending</option>
+              <option value="asc">↑ Ascending</option>
+            </select>
+          </div>
+
+          <button className="debug-toggle" onClick={() => setDebugMode((prev) => !prev)}>
+            {debugMode ? 'Hide Debug' : 'Show Debug'}
+          </button>
         </div>
       </div>
 
@@ -178,7 +144,7 @@ export default function TileGrid({ onTileTap }) {
         <Droppable droppableId="tileGrid" direction="horizontal">
           {(provided) => (
             <motion.div
-              key={filter + sortMode}
+              key={filter + sortMode + sortDirection}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -250,6 +216,15 @@ export default function TileGrid({ onTileTap }) {
                             </div>
 
                             <p>{tile.preview}</p>
+
+                            {debugMode && (
+                              <div className="debug-info">
+                                <small>
+                                  Replies: {tile.replyCount} | Updated:{' '}
+                                  {new Date(tile.lastUpdated).toLocaleString()}
+                                </small>
+                              </div>
+                            )}
                           </motion.div>
                         </div>
                       )}
