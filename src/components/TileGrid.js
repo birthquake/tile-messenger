@@ -72,6 +72,10 @@ export default function TileGrid({ onTileTap }) {
     onTileTap(tile);
   };
 
+  const handlePinToggle = async (tile) => {
+    await updateTile(tile.id, { pinned: !tile.pinned });
+  };
+
   const getGradientColor = (index) => {
     const row = Math.floor(index / numColumns);
     const col = index % numColumns;
@@ -80,6 +84,12 @@ export default function TileGrid({ onTileTap }) {
     const lightness = 60 - col * 5;
     return `hsl(${baseHue}, ${saturation}%, ${lightness}%)`;
   };
+
+  const sortedTiles = [...tiles].sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return b.priority - a.priority;
+  });
 
   return (
     <div>
@@ -99,7 +109,7 @@ export default function TileGrid({ onTileTap }) {
           {(provided) => (
             <div className="grid" ref={provided.innerRef} {...provided.droppableProps}>
               <AnimatePresence>
-                {tiles.map((tile, index) => (
+                {sortedTiles.map((tile, index) => (
                   <Draggable key={tile.id} draggableId={tile.id} index={index}>
                     {(provided) => (
                       <motion.div
@@ -130,7 +140,16 @@ export default function TileGrid({ onTileTap }) {
                           ×
                         </button>
 
-                        {/* Visual Tags */}
+                        <button
+                          className="pin-toggle"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePinToggle(tile);
+                          }}
+                        >
+                          {tile.pinned ? '📌' : '📍'}
+                        </button>
+
                         <div className="tile-tags">
                           {tile.unread && <span className="tag unread-dot" />}
                           {tile.pinned && <span className="tag pin-icon">📌</span>}
