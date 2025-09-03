@@ -1,7 +1,7 @@
 // src/components/ConversationView.js
 import React, { useState, useEffect, useRef } from 'react';
 import './ConversationView.css';
-import { db } from '../services/firebase'; // adjust path as needed
+import { db } from '../firebase'; // adjust path as needed
 import {
   collection,
   query,
