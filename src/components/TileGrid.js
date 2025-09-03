@@ -7,8 +7,6 @@ import toast, { Toaster } from 'react-hot-toast';
 
 export default function TileGrid() {
   const [tiles, setTiles] = useState([]);
-  const [editingTileId, setEditingTileId] = useState(null);
-  const [editText, setEditText] = useState('');
   const [loading, setLoading] = useState(false);
   const [numColumns, setNumColumns] = useState(getNumColumns());
 
@@ -52,15 +50,6 @@ export default function TileGrid() {
     toast.success('Tiles reordered');
   };
 
-  const handleEditSubmit = async (tileId) => {
-    setLoading(true);
-    await updateTile(tileId, { preview: editText });
-    setEditingTileId(null);
-    setEditText('');
-    setLoading(false);
-    toast.success('Tile updated');
-  };
-
   const handleDelete = async (tileId) => {
     const tileToDelete = tiles.find(t => t.id === tileId);
     setTiles(prev => prev.filter(t => t.id !== tileId));
@@ -78,7 +67,12 @@ export default function TileGrid() {
       { duration: 5000 }
     );
 
-    // Optional: delete from Firestore here if you want permanent removal
+    // Optional: delete from Firestore here if needed
+  };
+
+  const handleTileTap = (tile) => {
+    // Placeholder for future navigation to conversation view
+    console.log('Open conversation:', tile.id);
   };
 
   const getGradientColor = (index) => {
@@ -113,12 +107,9 @@ export default function TileGrid() {
                       }}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      whileHover={{ scale: 1.05, boxShadow: '0 0 8px rgba(0,0,0,0.2)' }}
+                      whileTap={{ scale: 0.97 }}
                       transition={{ duration: 0.2 }}
-                      onDoubleClick={() => {
-                        setEditingTileId(tile.id);
-                        setEditText(tile.preview);
-                      }}
+                      onClick={() => handleTileTap(tile)}
                     >
                       <button
                         className="delete-button"
@@ -129,22 +120,7 @@ export default function TileGrid() {
                       >
                         ×
                       </button>
-
-                      {editingTileId === tile.id ? (
-                        <form onSubmit={(e) => {
-                          e.preventDefault();
-                          handleEditSubmit(tile.id);
-                        }}>
-                          <input
-                            value={editText}
-                            onChange={(e) => setEditText(e.target.value)}
-                            autoFocus
-                            onBlur={() => handleEditSubmit(tile.id)}
-                          />
-                        </form>
-                      ) : (
-                        <p>{tile.preview}</p>
-                      )}
+                      <p>{tile.preview}</p>
                     </motion.div>
                   )}
                 </Draggable>
