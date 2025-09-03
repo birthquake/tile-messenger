@@ -106,7 +106,11 @@ export default function TileGrid({ onTileTap }) {
   const sortedTiles = filteredTiles.sort((a, b) => {
     if (a.pinned && !b.pinned) return -1;
     if (!a.pinned && b.pinned) return 1;
-    return b.priority - a.priority;
+
+    const scoreA = (a.replyCount || 0) * 1000 + (a.lastUpdated || 0);
+    const scoreB = (b.replyCount || 0) * 1000 + (b.lastUpdated || 0);
+
+    return scoreB - scoreA;
   });
 
   if (authError) {
