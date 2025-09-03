@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { subscribeToTiles, addTile, updateTile } from '../services/tileService';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSwipeable } from 'react-swipeable';
 import toast, { Toaster } from 'react-hot-toast';
 
 const getNumColumns = () => {
@@ -83,6 +84,7 @@ export default function TileGrid({ onTileTap }) {
 
   const handlePinToggle = async (tile) => {
     await updateTile(tile.id, { pinned: !tile.pinned });
+    toast(tile.pinned ? 'Unpinned' : 'Pinned');
   };
 
   const getGradientColor = (index) => {
@@ -135,78 +137,101 @@ export default function TileGrid({ onTileTap }) {
 
       {loading && <div className="loading-spinner">Loading...</div>}
 
-      {tiles.length === 0 && !loading && (
-        <div className="empty-state">
-          <p>No conversations yet. Tap + to start one.</p>
-        </div>
+      {sortedTiles.length === 0 && !loading && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="empty-state"
+        >
+          <p>No tiles match this filter.</p>
+        </motion.div>
       )}
 
       <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable droppableId="tileGrid" direction="horizontal">
           {(provided) => (
-            <div className="grid" ref={provided.innerRef} {...provided.droppableProps}>
+            <motion.div
+              key={filter}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="grid"
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+            >
               <AnimatePresence>
                 {sortedTiles.map((tile, index) => {
                   if (!tile?.id) return null;
 
+                  const handlers = useSwipeable({
+                    onSwipedLeft: () => handleDelete(tile.id),
+                    onSwipedRight: () => handlePinToggle(tile),
+                    preventDefaultTouchmoveEvent: true,
+                    trackMouse: true
+                  });
+
                   return (
                     <Draggable key={tile.id} draggableId={tile.id} index={index}>
                       {(provided) => (
-                        <motion.div
-                          className="tile"
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          style={{
-                            ...provided.draggableProps.style,
-                            backgroundColor: getGradientColor(index),
-                            position: 'relative',
-                            cursor: 'grab'
-                          }}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          whileTap={{ scale: 0.97 }}
-                          transition={{ duration: 0.3 }}
-                          onClick={() => handleTileTap(tile)}
-                        >
-                          <button
-                            className="delete-button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(tile.id);
+                        <div {...handlers}>
+                          <motion.div
+                            className="tile"
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            layout
+                            transition={{ layout: { duration: 0.4, ease: 'easeOut' } }}
+                            style={{
+                              ...provided.draggableProps.style,
+                              backgroundColor: getGradientColor(index),
+                              position: 'relative',
+                              cursor: 'grab'
                             }}
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => handleTileTap(tile)}
                           >
-                            ×
-                          </button>
+                            <button
+                              className="delete-button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(tile.id);
+                              }}
+                            >
+                              ×
+                            </button>
 
-                          <button
-                            className="pin-toggle"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePinToggle(tile);
-                            }}
-                          >
-                            {tile.pinned ? '📌' : '📍'}
-                          </button>
+                            <button
+                              className="pin-toggle"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePinToggle(tile);
+                              }}
+                            >
+                              {tile.pinned ? '📌' : '📍'}
+                            </button>
 
-                          <div className="tile-tags">
-                            {tile.unread && <span className="tag unread-dot">•</span>}
-                            {tile.pinned && <span className="tag pin-icon">📌</span>}
-                            {tile.lastSender && tile.lastSender !== 'You' && (
-                              <span className="tag reply-glow">💬</span>
-                            )}
-                          </div>
+                            <div className="tile-tags">
+                              {tile.unread && <span className="tag unread-dot">•</span>}
+                              {tile.pinned && <span className="tag pin-icon">📌</span>}
+                              {tile.lastSender && tile.lastSender !== 'You' && (
+                                <span className="tag reply-glow">💬</span>
+                              )}
+                            </div>
 
-                          <p>{tile.preview}</p>
-                        </motion.div>
+                            <p>{tile.preview}</p>
+                          </motion.div>
+                        </div>
                       )}
                     </Draggable>
                   );
                 })}
               </AnimatePresence>
               {provided.placeholder}
-            </div>
+            </motion.div>
           )}
         </Droppable>
       </DragDropContext>
