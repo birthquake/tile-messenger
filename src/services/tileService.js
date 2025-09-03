@@ -1,53 +1,44 @@
-import { db, auth } from '../firebase';
-import {
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  orderBy,
-  onSnapshot
-} from 'firebase/firestore';
+// src/services/tileService.js
+import { db } from '../firebase';
+import { getAuth } from 'firebase/auth';
+import { collection, onSnapshot, doc, setDoc, updateDoc } from 'firebase/firestore';
 
-// Get reference to user's tile collection
-const getTileCollection = () => {
+export const subscribeToTiles = (setTiles) => {
+  const auth = getAuth();
   const user = auth.currentUser;
-  if (!user) throw new Error("No authenticated user");
-  return collection(db, 'users', user.uid, 'tiles');
-};
 
-// 🔄 Listen for real-time tile updates
-export const subscribeToTiles = (callback) => {
-  const q = query(getTileCollection(), orderBy('priority', 'desc'));
-  return onSnapshot(q, (snapshot) => {
-    const tiles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    callback(tiles);
+  if (!user) {
+    throw new Error('No authenticated user');
+  }
+
+  const tilesRef = collection(db, 'users', user.uid, 'tiles');
+  return onSnapshot(tilesRef, (snapshot) => {
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setTiles(data);
   });
 };
 
-// ➕ Add a new tile
 export const addTile = async (tileData = {}) => {
-  const defaultTile = {
-    preview: 'New message',
-    color: '#CCCCCC',
-    priority: Date.now()
-  };
-  return await addDoc(getTileCollection(), { ...defaultTile, ...tileData });
+  const auth = getAuth();
+  const user = auth.currentUser;
+  if (!user) throw new Error('No authenticated user');
+
+  const newTileRef = doc(collection(db, 'users', user.uid, 'tiles'));
+  await setDoc(newTileRef, {
+    preview: '',
+    priority: Date.now(),
+    pinned: false,
+    unread: false,
+    lastSender: '',
+    ...tileData
+  });
 };
 
-// ✏️ Update an existing tile
 export const updateTile = async (tileId, updates) => {
+  const auth = getAuth();
   const user = auth.currentUser;
-  if (!user) throw new Error("No authenticated user");
-  const tileRef = doc(db, 'users', user.uid, 'tiles', tileId);
-  return await updateDoc(tileRef, updates);
-};
+  if (!user) throw new Error('No authenticated user');
 
-// ❌ Delete a tile
-export const deleteTile = async (tileId) => {
-  const user = auth.currentUser;
-  if (!user) throw new Error("No authenticated user");
   const tileRef = doc(db, 'users', user.uid, 'tiles', tileId);
-  return await deleteDoc(tileRef);
+  await updateDoc(tileRef, updates);
 };
