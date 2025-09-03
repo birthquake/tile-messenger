@@ -1,6 +1,14 @@
 // src/components/ConversationView.js
 import React, { useState, useEffect, useRef } from 'react';
 import './ConversationView.css';
+import { db } from '../services/firebase'; // adjust path as needed
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  addDoc
+} from 'firebase/firestore';
 
 export default function ConversationView({ thread, onBack }) {
   const [messages, setMessages] = useState([]);
@@ -8,25 +16,35 @@ export default function ConversationView({ thread, onBack }) {
   const messageEndRef = useRef(null);
 
   useEffect(() => {
-    setMessages([
-      { sender: 'You', text: 'Hey, are we still on for tomorrow?', timestamp: '10:42 AM' },
-      { sender: 'Alex', text: 'Yep! Looking forward to it.', timestamp: '10:45 AM' },
-      { sender: 'You', text: 'Awesome. I’ll bring the gear.', timestamp: '10:47 AM' }
-    ]);
-  }, []);
+    const messagesRef = collection(db, 'tiles', thread.id, 'messages');
+    const q = query(messagesRef, orderBy('timestamp'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const msgs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: new Date(doc.data().timestamp).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      }));
+      setMessages(msgs);
+    });
+
+    return () => unsubscribe();
+  }, [thread.id]);
 
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
-    const newMessage = {
+    const messagesRef = collection(db, 'tiles', thread.id, 'messages');
+    await addDoc(messagesRef, {
       sender: 'You',
       text: input,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    setMessages(prev => [...prev, newMessage]);
+      timestamp: Date.now()
+    });
     setInput('');
   };
 
@@ -38,8 +56,8 @@ export default function ConversationView({ thread, onBack }) {
       </header>
 
       <div className="message-list">
-        {messages.map((msg, index) => (
-          <div key={index} className={`message ${msg.sender === 'You' ? 'sent' : 'received'}`}>
+        {messages.map((msg) => (
+          <div key={msg.id} className={`message ${msg.sender === 'You' ? 'sent' : 'received'}`}>
             <div className="bubble">
               <p>{msg.text}</p>
               <span className="timestamp">{msg.timestamp}</span>
