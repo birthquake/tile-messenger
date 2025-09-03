@@ -5,7 +5,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
 
-export default function TileGrid() {
+export default function TileGrid({ onTileTap }) {
   const [tiles, setTiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [numColumns, setNumColumns] = useState(getNumColumns());
@@ -69,7 +69,7 @@ export default function TileGrid() {
   };
 
   const handleTileTap = (tile) => {
-    console.log('Open conversation:', tile.id);
+    onTileTap(tile);
   };
 
   const getGradientColor = (index) => {
