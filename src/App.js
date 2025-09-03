@@ -1,9 +1,10 @@
+// src/App.js
 import React, { useEffect, useState } from 'react';
 import { auth } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import TileGrid from './components/TileGrid';
 import AuthForm from './components/AuthForm';
-import './App.css'; // 👈 Make sure this is included
+import './App.css'; // Make sure this is present
 
 function App() {
   const [user, setUser] = useState(null);
