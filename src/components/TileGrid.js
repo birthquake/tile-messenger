@@ -61,6 +61,26 @@ export default function TileGrid() {
     toast.success('Tile updated');
   };
 
+  const handleDelete = async (tileId) => {
+    const tileToDelete = tiles.find(t => t.id === tileId);
+    setTiles(prev => prev.filter(t => t.id !== tileId));
+
+    toast(
+      (t) => (
+        <span>
+          Tile deleted&nbsp;
+          <button onClick={async () => {
+            await addTile(tileToDelete);
+            toast.dismiss(t.id);
+          }}>Undo</button>
+        </span>
+      ),
+      { duration: 5000 }
+    );
+
+    // Optional: delete from Firestore here if you want permanent removal
+  };
+
   const getGradientColor = (index) => {
     const row = Math.floor(index / numColumns);
     const col = index % numColumns;
@@ -88,7 +108,8 @@ export default function TileGrid() {
                       {...provided.dragHandleProps}
                       style={{
                         ...provided.draggableProps.style,
-                        backgroundColor: getGradientColor(index)
+                        backgroundColor: getGradientColor(index),
+                        position: 'relative'
                       }}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -99,6 +120,16 @@ export default function TileGrid() {
                         setEditText(tile.preview);
                       }}
                     >
+                      <button
+                        className="delete-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(tile.id);
+                        }}
+                      >
+                        ×
+                      </button>
+
                       {editingTileId === tile.id ? (
                         <form onSubmit={(e) => {
                           e.preventDefault();
