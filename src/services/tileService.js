@@ -1,15 +1,10 @@
 // src/services/tileService.js
-import { db } from '../firebase';
-import { getAuth } from 'firebase/auth';
+import { db, auth } from '../firebase';
 import { collection, onSnapshot, doc, setDoc, updateDoc } from 'firebase/firestore';
 
 export const subscribeToTiles = (setTiles) => {
-  const auth = getAuth();
   const user = auth.currentUser;
-
-  if (!user) {
-    throw new Error('No authenticated user');
-  }
+  if (!user) throw new Error('No authenticated user');
 
   const tilesRef = collection(db, 'users', user.uid, 'tiles');
   return onSnapshot(tilesRef, (snapshot) => {
@@ -19,7 +14,6 @@ export const subscribeToTiles = (setTiles) => {
 };
 
 export const addTile = async (tileData = {}) => {
-  const auth = getAuth();
   const user = auth.currentUser;
   if (!user) throw new Error('No authenticated user');
 
@@ -35,7 +29,6 @@ export const addTile = async (tileData = {}) => {
 };
 
 export const updateTile = async (tileId, updates) => {
-  const auth = getAuth();
   const user = auth.currentUser;
   if (!user) throw new Error('No authenticated user');
 
