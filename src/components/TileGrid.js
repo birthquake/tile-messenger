@@ -4,10 +4,6 @@ import { subscribeToTiles, addTile, updateTile } from '../services/tileService';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
-import { ReactComponent as PinIcon } from '../assets/icons/pin.svg';
-import { ReactComponent as ReplyIcon } from '../assets/icons/reply.svg';
-import { ReactComponent as DotIcon } from '../assets/icons/dot.svg';
-import { ReactComponent as AddIcon } from '../assets/icons/add.svg';
 
 const getNumColumns = () => {
   if (typeof window === 'undefined') return 4;
@@ -135,9 +131,7 @@ export default function TileGrid({ onTileTap }) {
         ))}
       </div>
 
-      <button className="add-tile-button" onClick={() => addTile()}>
-        <AddIcon />
-      </button>
+      <button className="add-tile-button" onClick={() => addTile()}>＋</button>
 
       {loading && <div className="loading-spinner">Loading...</div>}
 
@@ -193,14 +187,14 @@ export default function TileGrid({ onTileTap }) {
                               handlePinToggle(tile);
                             }}
                           >
-                            <PinIcon />
+                            {tile.pinned ? '📌' : '📍'}
                           </button>
 
                           <div className="tile-tags">
-                            {tile.unread && <DotIcon className="tag unread-dot" />}
-                            {tile.pinned && <PinIcon className="tag pin-icon" />}
+                            {tile.unread && <span className="tag unread-dot">•</span>}
+                            {tile.pinned && <span className="tag pin-icon">📌</span>}
                             {tile.lastSender && tile.lastSender !== 'You' && (
-                              <ReplyIcon className="tag reply-glow" />
+                              <span className="tag reply-glow">💬</span>
                             )}
                           </div>
 
