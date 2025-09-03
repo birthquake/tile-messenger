@@ -129,6 +129,16 @@ export default function TileGrid({ onTileTap }) {
                         >
                           ×
                         </button>
+
+                        {/* Visual Tags */}
+                        <div className="tile-tags">
+                          {tile.unread && <span className="tag unread-dot" />}
+                          {tile.pinned && <span className="tag pin-icon">📌</span>}
+                          {tile.lastSender && tile.lastSender !== 'You' && (
+                            <span className="tag reply-glow" />
+                          )}
+                        </div>
+
                         <p>{tile.preview}</p>
                       </motion.div>
                     )}
