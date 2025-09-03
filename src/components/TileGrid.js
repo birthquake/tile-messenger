@@ -4,6 +4,10 @@ import { subscribeToTiles, addTile, updateTile } from '../services/tileService';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
+import { ReactComponent as PinIcon } from '../assets/icons/pin.svg';
+import { ReactComponent as ReplyIcon } from '../assets/icons/reply.svg';
+import { ReactComponent as DotIcon } from '../assets/icons/dot.svg';
+import { ReactComponent as AddIcon } from '../assets/icons/add.svg';
 
 const getNumColumns = () => {
   if (typeof window === 'undefined') return 4;
@@ -18,6 +22,7 @@ export default function TileGrid({ onTileTap }) {
   const [loading, setLoading] = useState(false);
   const [numColumns, setNumColumns] = useState(getNumColumns());
   const [authError, setAuthError] = useState(false);
+  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     try {
@@ -93,7 +98,14 @@ export default function TileGrid({ onTileTap }) {
     return `hsl(${baseHue}, ${saturation}%, ${lightness}%)`;
   };
 
-  const sortedTiles = [...tiles].sort((a, b) => {
+  const filteredTiles = tiles.filter((tile) => {
+    if (filter === 'pinned') return tile.pinned;
+    if (filter === 'unread') return tile.unread;
+    if (filter === 'replied') return tile.lastSender && tile.lastSender !== 'You';
+    return true;
+  });
+
+  const sortedTiles = filteredTiles.sort((a, b) => {
     if (a.pinned && !b.pinned) return -1;
     if (!a.pinned && b.pinned) return 1;
     return b.priority - a.priority;
@@ -110,7 +122,22 @@ export default function TileGrid({ onTileTap }) {
   return (
     <div className="tilegrid-wrapper">
       <Toaster position="top-right" />
-      <button className="add-tile-button" onClick={() => addTile()}>+</button>
+
+      <div className="filter-tabs">
+        {['all', 'pinned', 'unread', 'replied'].map((type) => (
+          <button
+            key={type}
+            className={`filter-tab ${filter === type ? 'active' : ''}`}
+            onClick={() => setFilter(type)}
+          >
+            {type.charAt(0).toUpperCase() + type.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      <button className="add-tile-button" onClick={() => addTile()}>
+        <AddIcon />
+      </button>
 
       {loading && <div className="loading-spinner">Loading...</div>}
 
@@ -166,14 +193,14 @@ export default function TileGrid({ onTileTap }) {
                               handlePinToggle(tile);
                             }}
                           >
-                            {tile.pinned ? '📌' : '📍'}
+                            <PinIcon />
                           </button>
 
                           <div className="tile-tags">
-                            {tile.unread && <span className="tag unread-dot" />}
-                            {tile.pinned && <span className="tag pin-icon">📌</span>}
+                            {tile.unread && <DotIcon className="tag unread-dot" />}
+                            {tile.pinned && <PinIcon className="tag pin-icon" />}
                             {tile.lastSender && tile.lastSender !== 'You' && (
-                              <span className="tag reply-glow" />
+                              <ReplyIcon className="tag reply-glow" />
                             )}
                           </div>
 
