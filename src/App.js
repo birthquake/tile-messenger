@@ -17,12 +17,14 @@ function App() {
   }, []);
 
   if (!authReady) {
-    return (
-      <div className="loading-screen">
-        <p>Loading...</p>
-      </div>
-    );
-  }
+  return (
+    <div className="splash-screen">
+      <div className="logo">🟪 TileTalk</div>
+      <div className="tagline">Organize your messages. Swipe your way through.</div>
+    </div>
+  );
+}
+
 
   if (!user) {
     return <AuthForm onAuth={setUser} />;
