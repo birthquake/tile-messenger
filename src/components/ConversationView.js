@@ -1,13 +1,15 @@
 // src/components/ConversationView.js
 import React, { useState, useEffect, useRef } from 'react';
 import './ConversationView.css';
-import { db } from '../firebase'; // adjust path as needed
+import { db } from '../firebase'; // adjust path if needed
 import {
   collection,
   query,
   orderBy,
   onSnapshot,
-  addDoc
+  addDoc,
+  doc,
+  updateDoc
 } from 'firebase/firestore';
 
 export default function ConversationView({ thread, onBack }) {
@@ -18,7 +20,7 @@ export default function ConversationView({ thread, onBack }) {
   useEffect(() => {
     const messagesRef = collection(db, 'tiles', thread.id, 'messages');
     const q = query(messagesRef, orderBy('timestamp'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
       const msgs = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -28,6 +30,17 @@ export default function ConversationView({ thread, onBack }) {
         })
       }));
       setMessages(msgs);
+
+      const latest = snapshot.docs[snapshot.docs.length - 1]?.data();
+      if (latest && latest.sender !== 'You') {
+        await updateDoc(doc(db, 'tiles', thread.id), {
+          preview: latest.text,
+          lastUpdated: Date.now(),
+          unread: true,
+          lastSender: latest.sender,
+          priority: Date.now()
+        });
+      }
     });
 
     return () => unsubscribe();
@@ -45,6 +58,15 @@ export default function ConversationView({ thread, onBack }) {
       text: input,
       timestamp: Date.now()
     });
+
+    await updateDoc(doc(db, 'tiles', thread.id), {
+      preview: input,
+      lastUpdated: Date.now(),
+      unread: false,
+      lastSender: 'You',
+      priority: Date.now()
+    });
+
     setInput('');
   };
 
