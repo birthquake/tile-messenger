@@ -1,23 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { auth } from './firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import AuthForm from './components/AuthForm';
+// src/App.js
+import React, { useState } from 'react';
 import TileGrid from './components/TileGrid';
+import ConversationView from './components/ConversationView';
+import './App.css'; // Global styles
 
 function App() {
-  const [user, setUser] = useState(null);
+  const [selectedThread, setSelectedThread] = useState(null);
 
-  useEffect(() => {
-    return onAuthStateChanged(auth, setUser);
-  }, []);
+  const handleTileTap = (tile) => {
+    const mockThread = {
+      id: tile.id,
+      title: tile.preview || 'Conversation',
+      messages: [] // Will be populated in ConversationView
+    };
+    setSelectedThread(mockThread);
+  };
 
-  if (!user) return <AuthForm onAuth={setUser} />;
+  const handleBack = () => {
+    setSelectedThread(null);
+  };
 
   return (
-    <div>
-      <button onClick={() => signOut(auth)}>Sign Out</button>
-      <h2>Welcome, {user.email}</h2>
-      <TileGrid />
+    <div className="app">
+      {selectedThread ? (
+        <ConversationView thread={selectedThread} onBack={handleBack} />
+      ) : (
+        <TileGrid onTileTap={handleTileTap} />
+      )}
     </div>
   );
 }
