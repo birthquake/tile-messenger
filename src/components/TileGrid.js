@@ -70,6 +70,14 @@ export default function TileGrid({ onTileTap }) {
     toast.success('Tiles reordered');
   };
 
+  const handleDelete = async (id) => {
+    // implement deletion logic if needed
+  };
+
+  const handlePinToggle = async (tile) => {
+    await updateTile(tile.id, { pinned: !tile.pinned });
+  };
+
   const directionFactor = sortDirection === 'asc' ? 1 : -1;
 
   const filteredTiles = tiles.filter((tile) => {
@@ -103,12 +111,11 @@ export default function TileGrid({ onTileTap }) {
       </div>
     );
   }
-
   return (
     <div className="tilegrid-wrapper">
       <Toaster position="top-right" />
 
-          <div className="controls">
+      <div className="controls">
         <div className="filter-tabs">
           {['all', 'pinned', 'unread', 'replied'].map((type) => (
             <button
@@ -146,7 +153,24 @@ export default function TileGrid({ onTileTap }) {
         </div>
       </div>
 
-      <button className="add-tile-button" onClick={() => addTile()}>＋</button>
+      <button
+        className="add-tile-button"
+        onClick={async () => {
+          try {
+            const newTile = await addTile();
+            if (!newTile?.id) {
+              toast.error('Failed to create tile');
+              return;
+            }
+            setTiles((prev) => [...prev, newTile]);
+          } catch (err) {
+            console.error('Add tile failed:', err);
+            toast.error('Error adding tile');
+          }
+        }}
+      >
+        ＋
+      </button>
 
       {loading && <div className="loading-spinner">Loading...</div>}
 
@@ -174,7 +198,8 @@ export default function TileGrid({ onTileTap }) {
               {...provided.droppableProps}
             >
               <AnimatePresence>
-                {sortedTiles.map((tile, index) => {
+
+                              {sortedTiles.map((tile, index) => {
                   if (!tile?.id) return null;
 
                   const handlers = useSwipeable({
@@ -197,7 +222,7 @@ export default function TileGrid({ onTileTap }) {
                             transition={{ layout: { duration: 0.4, ease: 'easeOut' } }}
                             style={{
                               ...provided.draggableProps.style,
-                              backgroundColor: getGradientColor(index),
+                              backgroundColor: '#f0f0f0',
                               position: 'relative',
                               cursor: 'grab'
                             }}
@@ -205,7 +230,7 @@ export default function TileGrid({ onTileTap }) {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.8 }}
                             whileTap={{ scale: 0.97 }}
-                            onClick={() => handleTileTap(tile)}
+                            onClick={() => onTileTap(tile)}
                           >
                             <button
                               className="delete-button"
