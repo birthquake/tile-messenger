@@ -1,10 +1,10 @@
-// src/components/TileGrid.js
 import React, { useEffect, useState } from 'react';
 import { subscribeToTiles, addTile, updateTile } from '../services/tileService';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
 import toast, { Toaster } from 'react-hot-toast';
+import './TileGrid.css'; // 👈 Importing the new stylesheet
 
 const getNumColumns = () => {
   if (typeof window === 'undefined') return 4;
@@ -20,6 +20,7 @@ export default function TileGrid({ onTileTap }) {
   const [numColumns, setNumColumns] = useState(getNumColumns());
   const [authError, setAuthError] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [sortMode, setSortMode] = useState('smart');
 
   useEffect(() => {
     try {
@@ -104,12 +105,22 @@ export default function TileGrid({ onTileTap }) {
   });
 
   const sortedTiles = filteredTiles.sort((a, b) => {
-    if (a.pinned && !b.pinned) return -1;
-    if (!a.pinned && b.pinned) return 1;
+    if (sortMode === 'pinned') {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return b.priority - a.priority;
+    }
+
+    if (sortMode === 'recent') {
+      return (b.lastUpdated || 0) - (a.lastUpdated || 0);
+    }
+
+    if (sortMode === 'engaged') {
+      return (b.replyCount || 0) - (a.replyCount || 0);
+    }
 
     const scoreA = (a.replyCount || 0) * 1000 + (a.lastUpdated || 0);
     const scoreB = (b.replyCount || 0) * 1000 + (b.lastUpdated || 0);
-
     return scoreB - scoreA;
   });
 
@@ -125,16 +136,28 @@ export default function TileGrid({ onTileTap }) {
     <div className="tilegrid-wrapper">
       <Toaster position="top-right" />
 
-      <div className="filter-tabs">
-        {['all', 'pinned', 'unread', 'replied'].map((type) => (
-          <button
-            key={type}
-            className={`filter-tab ${filter === type ? 'active' : ''}`}
-            onClick={() => setFilter(type)}
-          >
-            {type.charAt(0).toUpperCase() + type.slice(1)}
-          </button>
-        ))}
+      <div className="controls">
+        <div className="filter-tabs">
+          {['all', 'pinned', 'unread', 'replied'].map((type) => (
+            <button
+              key={type}
+              className={`filter-tab ${filter === type ? 'active' : ''}`}
+              onClick={() => setFilter(type)}
+            >
+              {type.charAt(0).toUpperCase() + type.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        <div className="sort-dropdown">
+          <label>Sort by:</label>
+          <select value={sortMode} onChange={(e) => setSortMode(e.target.value)}>
+            <option value="smart">Smart</option>
+            <option value="recent">Recent</option>
+            <option value="engaged">Engaged</option>
+            <option value="pinned">Pinned</option>
+          </select>
+        </div>
       </div>
 
       <button className="add-tile-button" onClick={() => addTile()}>＋</button>
@@ -155,7 +178,7 @@ export default function TileGrid({ onTileTap }) {
         <Droppable droppableId="tileGrid" direction="horizontal">
           {(provided) => (
             <motion.div
-              key={filter}
+              key={filter + sortMode}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
